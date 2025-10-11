@@ -11,22 +11,87 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            name: certfix-agent-linux-amd64
+          - goos: linux
+            goarch: arm64
+            name: certfix-agent-linux-arm64
+          - goos: linux
+            goarch: arm
+            goarm: "7"
+            name: certfix-agent-linux-armv7
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: 1.23
-      - name: Build
+
+      - name: Build binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          GOARM: ${{ matrix.goarm }}
         run: |
           mkdir -p build
-          GOOS=linux GOARCH=amd64 go build -o build/certfix-agent ./cmd
-      - name: Upload release using GitHub CLI
+          go build -ldflags="-s -w" -o build/${{ matrix.name }} ./cmd
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: build/${{ matrix.name }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release files
+        run: |
+          mkdir -p release
+          # Move all binaries to release directory
+          find artifacts -name "certfix-agent-*" -type f -exec cp {} release/ \;
+          # Create a default binary (x86_64) for backward compatibility
+          cp release/certfix-agent-linux-amd64 release/certfix-agent
+          ls -la release/
+
+      - name: Create Release
         run: |
           gh release create "${GITHUB_REF_NAME}" \
-            ./build/certfix-agent \
+            release/* \
             --title "Release ${GITHUB_REF_NAME}" \
-            --notes "Automated release build"
+            --notes "## Release ${GITHUB_REF_NAME}
+
+          ### Supported Architectures:
+          - **certfix-agent-linux-amd64** - Linux x86_64
+          - **certfix-agent-linux-arm64** - Linux ARM64
+          - **certfix-agent-linux-armv7** - Linux ARMv7
+          - **certfix-agent** - Default binary (Linux x86_64)
+
+          ### Installation:
+          \`\`\`bash
+          # Auto-detect architecture and install
+          curl -fsSL https://raw.githubusercontent.com/certfix/certfix-agent/main/scripts/install.sh | sudo bash
+
+          # Or download specific architecture manually:
+          # For x86_64: wget https://github.com/certfix/certfix-agent/releases/download/${GITHUB_REF_NAME}/certfix-agent-linux-amd64
+          # For ARM64:  wget https://github.com/certfix/certfix-agent/releases/download/${GITHUB_REF_NAME}/certfix-agent-linux-arm64
+          # For ARMv7:  wget https://github.com/certfix/certfix-agent/releases/download/${GITHUB_REF_NAME}/certfix-agent-linux-armv7
+          \`\`\`"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
