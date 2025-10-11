@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-    log.Println("[linux-agent] Starting agent...")
+    log.Println("[certfix-agent] Starting agent...")
 
     ticker := time.NewTicker(10 * time.Second)
     defer ticker.Stop()
@@ -14,7 +14,7 @@ func main() {
     for {
         select {
         case <-ticker.C:
-            log.Println("[linux-agent] Heartbeat: agent is alive")
+            log.Println("[certfix-agent] Heartbeat: agent is alive")
         }
     }
 }

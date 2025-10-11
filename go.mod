@@ -1,4 +1,4 @@
-module github.com/seuuser/linux-agent
+module github.com/certfix/certfix-agent
 
 go 1.23
 
