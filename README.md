@@ -12,12 +12,12 @@ make docker-build
 make docker-run
 ```
 
-Dentro do Container
+```
+make docker-down
+```
+
+## Dentro do Container
 
 ```
 make docker-shell
-```
-
-```
-make docker-down
 ```

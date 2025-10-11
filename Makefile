@@ -1,5 +1,5 @@
-APP_NAME=linux-agent
-CONTAINER=linux-agent-dev
+APP_NAME=certfix-agent
+CONTAINER=certfix-agent-dev
 
 # Build local (usando Go direto)
 build:
