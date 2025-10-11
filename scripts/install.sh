@@ -1,13 +1,13 @@
 #!/bin/bash
 set -e
 
-REPO_URL="https://githubusercontent.com/seuuser/linux-agent/main"
-BIN_PATH="/usr/local/bin/linux-agent"
-CONFIG_DIR="/etc/linux-agent"
+REPO_URL="https://githubusercontent.com/seuuser/certfix-agent/main"
+BIN_PATH="/usr/local/bin/certfix-agent"
+CONFIG_DIR="/etc/certfix-agent"
 CONFIG_FILE="$CONFIG_DIR/config.json"
-SERVICE_NAME="linux-agent"
+SERVICE_NAME="certfix-agent"
 
-echo "[INFO] Instalando Linux Agent..."
+echo "[INFO] Instalando Certfix Agent..."
 
 sudo mkdir -p "$CONFIG_DIR"
 
@@ -26,12 +26,12 @@ if [ ! -f "$CONFIG_FILE" ]; then
   echo "{\"token\": \"$token\", \"endpoint\": \"$endpoint\", \"auto_update\": $autoupdate, \"current_version\": \"0.0.1\"}" | sudo tee "$CONFIG_FILE" >/dev/null
 fi
 
-sudo curl -fsSL "$REPO_URL/build/linux-agent" -o "$BIN_PATH"
+sudo curl -fsSL "$REPO_URL/build/certfix-agent" -o "$BIN_PATH"
 sudo chmod +x "$BIN_PATH"
 
 sudo bash -c "cat > /etc/systemd/system/$SERVICE_NAME.service" <<EOF
 [Unit]
-Description=Linux Agent Service
+Description=CertFix Agent Service
 After=network.target
 
 [Service]
