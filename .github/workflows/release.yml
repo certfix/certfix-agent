@@ -18,7 +18,7 @@ jobs:
       - name: Build
         run: |
           mkdir -p build
-          GOOS=linux GOARCH=amd64 go build -o build/linux-agent ./cmd
+          GOOS=linux GOARCH=amd64 go build -o build/certfix-agent ./cmd
       - name: Upload release using GitHub CLI
         run: |
           gh release create "${GITHUB_REF_NAME}" \
