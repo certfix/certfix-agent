@@ -61,14 +61,6 @@ This will automatically build and release binaries for:
 
 ## Installation
 
-### Automatic Installation (Recommended)
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/certfix/certfix-agent/main/scripts/install.sh | sudo bash
-```
-
-### Manual Installation
-
 ```bash
 # Download the install script
 curl -fsSL https://raw.githubusercontent.com/certfix/certfix-agent/main/scripts/install.sh -o install.sh
@@ -87,14 +79,6 @@ sudo journalctl -u certfix-agent -f
 ```
 
 ## Uninstallation
-
-### Automatic Removal
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/certfix/certfix-agent/main/scripts/uninstall.sh | sudo bash
-```
-
-### Manual Removal
 
 ```bash
 # Download the uninstall script
@@ -170,12 +154,6 @@ sudo systemctl reset-failed certfix-agent
 ```
 
 ## Updates
-
-### Automatic Update
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/certfix/certfix-agent/main/scripts/update.sh | sudo bash
-```
 
 ### Automatic Update (No Confirmation)
 
