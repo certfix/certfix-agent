@@ -168,3 +168,34 @@ sudo rm -rf /etc/certfix-agent
 # Reset any failed service states
 sudo systemctl reset-failed certfix-agent
 ```
+
+## Updates
+
+### Automatic Update
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/certfix/certfix-agent/main/scripts/update.sh | sudo bash
+```
+
+### Automatic Update (No Confirmation)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/certfix/certfix-agent/main/scripts/update.sh | sudo bash -s -- --yes
+```
+
+### Manual Update
+
+```bash
+# Download the update script
+curl -fsSL https://raw.githubusercontent.com/certfix/certfix-agent/main/scripts/update.sh -o update.sh
+chmod +x update.sh
+sudo ./update.sh
+```
+
+The update script will:
+
+- Check for newer versions
+- Download the appropriate binary for your architecture
+- Create a backup of the current version
+- Update the service safely
+- Rollback automatically if the update fails
