@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-REPO_URL="https://githubusercontent.com/seuuser/certfix-agent/main"
+REPO_URL="https://githubusercontent.com/certfix/certfix-agent/main"
 BIN_PATH="/usr/local/bin/certfix-agent"
 CONFIG_DIR="/etc/certfix-agent"
 CONFIG_FILE="$CONFIG_DIR/config.json"
