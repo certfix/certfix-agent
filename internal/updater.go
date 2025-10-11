@@ -12,8 +12,8 @@ import (
 
 
 const (
-	RepoAPI = "https://api.github.com/repos/seuuser/linux-agent/releases/latest"
-	BinaryPath = "/usr/local/bin/linux-agent"
+	RepoAPI = "https://api.github.com/repos/certfix/certfix-agent/releases/latest"
+	BinaryPath = "/usr/local/bin/certfix-agent"
 )
 
 type Release struct {
@@ -53,7 +53,7 @@ func CheckForUpdates(cfg *Config) {
 }
 
 func updateBinary(url string) {
-	tmp := "/tmp/linux-agent"
+	tmp := "/tmp/certfix-agent"
 	log.Printf("Baixando nova versão de %s...", url)
 	cmd := exec.Command("curl", "-fsSL", "-o", tmp, url)
 	if err := cmd.Run(); err != nil {
@@ -71,5 +71,5 @@ func updateBinary(url string) {
 	}
 
 	log.Println("Atualização concluída. Reiniciando serviço...")
-	exec.Command("systemctl", "restart", "linux-agent").Run()
+	exec.Command("systemctl", "restart", "certfix-agent").Run()
 }
