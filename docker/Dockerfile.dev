@@ -1,0 +1,19 @@
+FROM golang:1.23-alpine
+
+# Instala ferramentas úteis
+RUN apk add --no-cache bash curl git make
+
+# Diretório de trabalho dentro do container
+WORKDIR /app
+
+COPY go.mod go.sum ./
+RUN go mod tidy || true
+
+# Copia o restante do código
+COPY . .
+
+# Cria o diretório de build
+RUN mkdir -p build
+
+# Comando padrão para desenvolvimento
+CMD ["tail", "-f", "/dev/null"]

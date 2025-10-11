@@ -1,0 +1,12 @@
+version: "3.8"
+
+services:
+  agent-dev:
+    build:
+      context: ..
+      dockerfile: ./docker/Dockerfile.dev
+    container_name: linux-agent-dev
+    working_dir: /app
+    volumes:
+      - ../:/app
+    tty: true
