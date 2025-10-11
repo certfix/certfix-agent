@@ -4,16 +4,40 @@ set -e
 # GitHub repository and release info
 REPO_OWNER="certfix"
 REPO_NAME="certfix-agent"
-BINARY_NAME="certfix-agent"
-DOWNLOAD_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/latest/download/${BINARY_NAME}"
+SERVICE_NAME="certfix-agent"
 
 # Installation paths
 BIN_PATH="/usr/local/bin/certfix-agent"
 CONFIG_DIR="/etc/certfix-agent"
 CONFIG_FILE="$CONFIG_DIR/config.json"
-SERVICE_NAME="certfix-agent"
 
-echo "[INFO] Installing Certfix Agent..."
+# Detect architecture
+detect_arch() {
+    local arch
+    arch=$(uname -m)
+    case $arch in
+        x86_64)
+            echo "amd64"
+            ;;
+        aarch64)
+            echo "arm64"
+            ;;
+        armv7l)
+            echo "armv7"
+            ;;
+        *)
+            echo "[ERROR] Unsupported architecture: $arch"
+            echo "Supported architectures: x86_64, aarch64, armv7l"
+            exit 1
+            ;;
+    esac
+}
+
+ARCH=$(detect_arch)
+BINARY_NAME="certfix-agent-linux-${ARCH}"
+DOWNLOAD_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/latest/download/${BINARY_NAME}"
+
+echo "[INFO] Installing Certfix Agent for $(uname -m) (${ARCH})..."
 
 # Check if running as root or with sudo
 if [[ $EUID -ne 0 ]]; then
@@ -43,7 +67,8 @@ if [ ! -f "$CONFIG_FILE" ]; then
   "token": "$token",
   "endpoint": "$endpoint",
   "auto_update": $autoupdate,
-  "current_version": "0.0.1"
+  "current_version": "0.0.1",
+  "architecture": "$ARCH"
 }
 EOF
   chmod 600 "$CONFIG_FILE"
@@ -51,7 +76,7 @@ EOF
 fi
 
 # Download the latest binary
-echo "[INFO] Downloading latest release..."
+echo "[INFO] Downloading latest release for ${ARCH}..."
 if ! curl -fsSL "$DOWNLOAD_URL" -o "$BIN_PATH"; then
   echo "[ERROR] Failed to download binary from $DOWNLOAD_URL"
   echo "[INFO] Make sure you have created a release with the binary attached"
@@ -87,6 +112,7 @@ systemctl start "$SERVICE_NAME"
 # Check service status
 if systemctl is-active --quiet "$SERVICE_NAME"; then
   echo "[SUCCESS] Certfix Agent installed and running!"
+  echo "Architecture: $(uname -m) (${ARCH})"
   echo "Service status: $(systemctl is-active $SERVICE_NAME)"
   echo "To check logs: journalctl -u $SERVICE_NAME -f"
 else
