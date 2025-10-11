@@ -2,10 +2,8 @@ name: Build and Release
 
 on:
   push:
-    # tags:
-    branches:
-      # - "v*"
-      - "test*"
+    tags:
+      - "v*"
 
 jobs:
   build:
