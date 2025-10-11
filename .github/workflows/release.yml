@@ -23,7 +23,6 @@ jobs:
         run: |
           gh release create "${GITHUB_REF_NAME}" \
             ./build/certfix-agent \
-            ./build/certfix-agent-arm64 \
             --title "Release ${GITHUB_REF_NAME}" \
             --notes "Automated release build"
         env:
