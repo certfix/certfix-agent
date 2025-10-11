@@ -2,6 +2,29 @@
 
 ## Development
 
+### PAra ajustar depois
+
+# Development workflow
+
+make docker-up # Start environment
+make docker-run # Build and run in container
+make docker-shell # Enter container for debugging
+
+# Local development
+
+make build-dev # Build for native platform
+make run # Build and run locally
+make test # Run tests
+
+# Production builds
+
+make build-all # Build all architectures
+make prepare-release # Prepare for release
+
+# Get help
+
+make help # Show all available targets
+
 ### Docker Environment
 
 ```
@@ -10,6 +33,8 @@ make docker-up
 
 ```
 make docker-build
+
+make docker-build-all
 ```
 
 ```

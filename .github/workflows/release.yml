@@ -68,7 +68,16 @@ jobs:
           find artifacts -name "certfix-agent-*" -type f -exec cp {} release/ \;
           # Create a default binary (x86_64) for backward compatibility
           cp release/certfix-agent-linux-amd64 release/certfix-agent
+          # Make all binaries executable
+          chmod +x release/*
+          # Show what we have
           ls -la release/
+
+      - name: Generate checksums
+        run: |
+          cd release
+          sha256sum * > checksums.txt
+          cat checksums.txt
 
       - name: Create Release
         run: |
@@ -92,6 +101,12 @@ jobs:
           # For x86_64: wget https://github.com/certfix/certfix-agent/releases/download/${GITHUB_REF_NAME}/certfix-agent-linux-amd64
           # For ARM64:  wget https://github.com/certfix/certfix-agent/releases/download/${GITHUB_REF_NAME}/certfix-agent-linux-arm64
           # For ARMv7:  wget https://github.com/certfix/certfix-agent/releases/download/${GITHUB_REF_NAME}/certfix-agent-linux-armv7
+
+          ### Verification:
+          \`\`\`bash
+          # Download and verify checksums
+          wget https://github.com/certfix/certfix-agent/releases/download/${GITHUB_REF_NAME}/checksums.txt
+          sha256sum -c checksums.txt
           \`\`\`"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
