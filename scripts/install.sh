@@ -53,20 +53,12 @@ if [ ! -f "$CONFIG_FILE" ]; then
   echo "[INFO] First time setup - please provide configuration:"
   read -p "API Token: " token
   read -p "Server endpoint (e.g., https://api.example.com): " endpoint
-  read -p "Enable auto-update? (y/n): " autoupdate
-
-  if [[ "$autoupdate" =~ ^[Yy]$ ]]; then
-    autoupdate=true
-  else
-    autoupdate=false
-  fi
 
   # Create config file
   cat > "$CONFIG_FILE" <<EOF
 {
   "token": "$token",
   "endpoint": "$endpoint",
-  "auto_update": $autoupdate,
   "current_version": "0.0.1",
   "architecture": "$ARCH"
 }

@@ -115,7 +115,6 @@ Arquivo de configuração padrão: `/etc/certfix-agent/config.json`
 {
   "token": "seu-token-api",
   "endpoint": "https://api.example.com",
-  "auto_update": true,
   "current_version": "0.0.1",
   "architecture": "amd64"
 }
