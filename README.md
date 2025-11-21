@@ -129,6 +129,8 @@ Isso criará o arquivo de configuração em `/etc/certfix-agent/config.json`:
 }
 ```
 
+**Nota sobre Versão:** A versão do agente é armazenada no arquivo de configuração (`current_version`). Quando você reconfigura o agente, a versão existente é preservada. Para atualizar a versão, edite o arquivo de configuração ou use o script de atualização.
+
 ### Comandos Disponíveis
 
 ```bash
