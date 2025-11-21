@@ -86,7 +86,7 @@ Description=CertFix Agent Service
 After=network.target
 
 [Service]
-ExecStart=$BIN_PATH
+ExecStart=$BIN_PATH start
 Restart=always
 RestartSec=5
 User=root

@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -10,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -17,7 +19,7 @@ import (
 
 const (
 	CONFIG_FILE       = "/etc/certfix-agent/config.json"
-	AGENT_VERSION     = "0.1.0"
+	DEFAULT_VERSION   = "0.0.0"
 	HEARTBEAT_INTERVAL = 5 * time.Minute
 	REGISTER_RETRY_DELAY = 30 * time.Second
 )
@@ -25,8 +27,8 @@ const (
 type Config struct {
 	Token          string `json:"token"`
 	Endpoint       string `json:"endpoint"`
-	CurrentVersion string `json:"current_version"`
-	Architecture   string `json:"architecture"`
+	CurrentVersion string `json:"current_version,omitempty"`
+	Architecture   string `json:"architecture,omitempty"`
 }
 
 type InstanceData struct {
@@ -69,7 +71,34 @@ func loadConfig() (*Config, error) {
 		return nil, fmt.Errorf("endpoint is required in config file")
 	}
 
+	// Set default version if not specified
+	if config.CurrentVersion == "" {
+		config.CurrentVersion = DEFAULT_VERSION
+	}
+
 	return &config, nil
+}
+
+// Save configuration to file
+func saveConfig(config *Config) error {
+	// Create directory if it doesn't exist
+	configDir := filepath.Dir(CONFIG_FILE)
+	if err := os.MkdirAll(configDir, 0755); err != nil {
+		return fmt.Errorf("failed to create config directory: %w", err)
+	}
+
+	// Marshal config to JSON
+	data, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal config: %w", err)
+	}
+
+	// Write to file
+	if err := os.WriteFile(CONFIG_FILE, data, 0600); err != nil {
+		return fmt.Errorf("failed to write config file: %w", err)
+	}
+
+	return nil
 }
 
 // Get hostname
@@ -152,7 +181,7 @@ func getMACAddress() string {
 }
 
 // Collect instance data
-func collectInstanceData() *InstanceData {
+func collectInstanceData(version string) *InstanceData {
 	return &InstanceData{
 		Hostname:     getHostname(),
 		OSType:       runtime.GOOS,
@@ -160,7 +189,7 @@ func collectInstanceData() *InstanceData {
 		Architecture: runtime.GOARCH,
 		IPAddress:    getIPAddress(),
 		MACAddress:   getMACAddress(),
-		AgentVersion: AGENT_VERSION,
+		AgentVersion: version,
 		Metadata: map[string]interface{}{
 			"num_cpu":   runtime.NumCPU(),
 			"go_version": runtime.Version(),
@@ -242,19 +271,131 @@ func sendHeartbeat(config *Config, instanceID string) error {
 }
 
 func main() {
-	log.Println("[certfix-agent] Starting agent version", AGENT_VERSION)
+	if len(os.Args) < 2 {
+		printUsage()
+		os.Exit(1)
+	}
 
+	command := os.Args[1]
+
+	switch command {
+	case "configure":
+		handleConfigure()
+	case "start":
+		handleStart()
+	case "version":
+		handleVersion()
+	case "help", "--help", "-h":
+		printUsage()
+	default:
+		fmt.Printf("Unknown command: %s\n\n", command)
+		printUsage()
+		os.Exit(1)
+	}
+}
+
+func printUsage() {
+	fmt.Printf("CertFix Agent v%s\n\n", getVersionString())
+	fmt.Println("Usage:")
+	fmt.Println("  certfix-agent configure --token <api-key> --endpoint <url>")
+	fmt.Println("  certfix-agent start")
+	fmt.Println("  certfix-agent version")
+	fmt.Println("  certfix-agent help")
+	fmt.Println()
+	fmt.Println("Commands:")
+	fmt.Println("  configure  Configure agent with token and endpoint")
+	fmt.Println("  start      Start the agent service")
+	fmt.Println("  version    Show version information")
+	fmt.Println("  help       Show this help message")
+	fmt.Println()
+	fmt.Println("Configure Options:")
+	fmt.Println("  --token     API token for authentication (required)")
+	fmt.Println("  --endpoint  API endpoint URL (required)")
+}
+
+func getVersionString() string {
+	config, err := loadConfig()
+	if err != nil {
+		return DEFAULT_VERSION
+	}
+	return config.CurrentVersion
+}
+
+func handleVersion() {
+	fmt.Printf("CertFix Agent v%s\n", getVersionString())
+	fmt.Printf("OS: %s\n", runtime.GOOS)
+	fmt.Printf("Architecture: %s\n", runtime.GOARCH)
+	fmt.Printf("Go Version: %s\n", runtime.Version())
+}
+
+func handleConfigure() {
+	configureCmd := flag.NewFlagSet("configure", flag.ExitOnError)
+	token := configureCmd.String("token", "", "API token for authentication")
+	endpoint := configureCmd.String("endpoint", "", "API endpoint URL")
+
+	configureCmd.Parse(os.Args[2:])
+
+	if *token == "" {
+		fmt.Println("Error: --token is required")
+		fmt.Println()
+		configureCmd.Usage()
+		os.Exit(1)
+	}
+
+	if *endpoint == "" {
+		fmt.Println("Error: --endpoint is required")
+		fmt.Println()
+		configureCmd.Usage()
+		os.Exit(1)
+	}
+
+	// Load existing config if available to preserve version
+	existingConfig, _ := loadConfig()
+	version := DEFAULT_VERSION
+	if existingConfig != nil && existingConfig.CurrentVersion != "" {
+		version = existingConfig.CurrentVersion
+	}
+
+	// Create config
+	config := &Config{
+		Token:          *token,
+		Endpoint:       *endpoint,
+		CurrentVersion: version,
+		Architecture:   runtime.GOARCH,
+	}
+
+	// Save config
+	if err := saveConfig(config); err != nil {
+		log.Fatalf("[FATAL] Failed to save configuration: %v", err)
+	}
+
+	fmt.Printf("[SUCCESS] Configuration saved to %s\n", CONFIG_FILE)
+	fmt.Printf("[INFO] Token: %s\n", maskToken(*token))
+	fmt.Printf("[INFO] Endpoint: %s\n", *endpoint)
+	fmt.Println()
+	fmt.Println("You can now start the agent with: certfix-agent start")
+}
+
+func maskToken(token string) string {
+	if len(token) <= 8 {
+		return "***"
+	}
+	return token[:4] + "..." + token[len(token)-4:]
+}
+
+func handleStart() {
 	// Load configuration
 	config, err := loadConfig()
 	if err != nil {
 		log.Fatalf("[FATAL] Failed to load configuration: %v", err)
 	}
 
+	log.Println("[certfix-agent] Starting agent version", config.CurrentVersion)
 	log.Printf("[INFO] Configuration loaded from %s", CONFIG_FILE)
 	log.Printf("[INFO] Endpoint: %s", config.Endpoint)
 
 	// Collect instance data
-	instanceData := collectInstanceData()
+	instanceData := collectInstanceData(config.CurrentVersion)
 	log.Printf("[INFO] Instance Info: %s (%s %s) on %s", 
 		instanceData.Hostname, 
 		instanceData.OSType, 

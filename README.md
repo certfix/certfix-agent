@@ -5,6 +5,26 @@ O projeto é **open source** e pode ser facilmente compilado, testado e implanta
 
 ---
 
+## 🚀 Início Rápido
+
+### Instalação e Configuração
+
+```bash
+# 1. Baixar e instalar
+curl -fsSL https://raw.githubusercontent.com/certfix/certfix-agent/main/scripts/install.sh | sudo bash
+
+# 2. Configurar com seu token de API
+sudo certfix-agent configure --token "seu-token-api" --endpoint "https://api.certfix.com/api"
+
+# 3. Iniciar o serviço
+sudo systemctl start certfix-agent
+
+# 4. Verificar status
+sudo systemctl status certfix-agent
+```
+
+---
+
 ## Ambiente de Desenvolvimento
 
 ### Usando Docker
@@ -89,6 +109,42 @@ chmod +x install.sh
 sudo ./install.sh
 ```
 
+### Configuração
+
+Após a instalação, configure o agente com seu token de API e endpoint:
+
+```bash
+# Configurar o agente
+sudo certfix-agent configure --token "seu-token-api" --endpoint "https://api.example.com/api"
+```
+
+Isso criará o arquivo de configuração em `/etc/certfix-agent/config.json`:
+
+```json
+{
+  "token": "seu-token-api",
+  "endpoint": "https://api.example.com/api",
+  "current_version": "0.1.0",
+  "architecture": "amd64"
+}
+```
+
+### Comandos Disponíveis
+
+```bash
+# Configurar o agente
+certfix-agent configure --token <api-key> --endpoint <url>
+
+# Iniciar o agente
+certfix-agent start
+
+# Ver versão
+certfix-agent version
+
+# Ver ajuda
+certfix-agent help
+```
+
 ### Verificar Instalação
 
 ```
@@ -105,19 +161,6 @@ sudo journalctl -u certfix-agent -f
 curl -fsSL https://raw.githubusercontent.com/certfix/certfix-agent/main/scripts/uninstall.sh -o uninstall.sh
 chmod +x uninstall.sh
 sudo ./uninstall.sh
-```
-
-### Configuração
-
-Arquivo de configuração padrão: `/etc/certfix-agent/config.json`
-
-```
-{
-  "token": "seu-token-api",
-  "endpoint": "https://api.example.com",
-  "current_version": "0.0.1",
-  "architecture": "amd64"
-}
 ```
 
 ### Arquiteturas Suportadas
