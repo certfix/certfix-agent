@@ -93,9 +93,14 @@ func saveConfig(config *Config) error {
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}
 
-	// Write to file
-	if err := os.WriteFile(CONFIG_FILE, data, 0600); err != nil {
+	// Write to file with 0644 permissions (owner read/write, others read)
+	if err := os.WriteFile(CONFIG_FILE, data, 0644); err != nil {
 		return fmt.Errorf("failed to write config file: %w", err)
+	}
+
+	// Ensure correct permissions (in case umask interferes)
+	if err := os.Chmod(CONFIG_FILE, 0644); err != nil {
+		return fmt.Errorf("failed to set config file permissions: %w", err)
 	}
 
 	return nil
@@ -281,6 +286,8 @@ func main() {
 	switch command {
 	case "configure":
 		handleConfigure()
+	case "config":
+		handleShowConfig()
 	case "start":
 		handleStart()
 	case "version":
@@ -298,12 +305,14 @@ func printUsage() {
 	fmt.Printf("CertFix Agent v%s\n\n", getVersionString())
 	fmt.Println("Usage:")
 	fmt.Println("  certfix-agent configure --token <api-key> --endpoint <url>")
+	fmt.Println("  certfix-agent config")
 	fmt.Println("  certfix-agent start")
 	fmt.Println("  certfix-agent version")
 	fmt.Println("  certfix-agent help")
 	fmt.Println()
 	fmt.Println("Commands:")
 	fmt.Println("  configure  Configure agent with token and endpoint")
+	fmt.Println("  config     Show current configuration")
 	fmt.Println("  start      Start the agent service")
 	fmt.Println("  version    Show version information")
 	fmt.Println("  help       Show this help message")
@@ -326,6 +335,25 @@ func handleVersion() {
 	fmt.Printf("OS: %s\n", runtime.GOOS)
 	fmt.Printf("Architecture: %s\n", runtime.GOARCH)
 	fmt.Printf("Go Version: %s\n", runtime.Version())
+}
+
+func handleShowConfig() {
+	config, err := loadConfig()
+	if err != nil {
+		fmt.Printf("[ERROR] Failed to load configuration: %v\n", err)
+		fmt.Printf("[INFO] Config file: %s\n", CONFIG_FILE)
+		fmt.Println("[INFO] Run 'certfix-agent configure' to set up the agent")
+		os.Exit(1)
+	}
+
+	fmt.Println("Current Configuration:")
+	fmt.Println("─────────────────────────────────────────────────")
+	fmt.Printf("Config File:  %s\n", CONFIG_FILE)
+	fmt.Printf("Version:      %s\n", config.CurrentVersion)
+	fmt.Printf("Endpoint:     %s\n", config.Endpoint)
+	fmt.Printf("Token:        %s\n", maskToken(config.Token))
+	fmt.Printf("Architecture: %s\n", config.Architecture)
+	fmt.Println("─────────────────────────────────────────────────")
 }
 
 func handleConfigure() {
@@ -366,7 +394,18 @@ func handleConfigure() {
 
 	// Save config
 	if err := saveConfig(config); err != nil {
-		log.Fatalf("[FATAL] Failed to save configuration: %v", err)
+		fmt.Printf("\n[ERROR] Failed to save configuration: %v\n", err)
+		fmt.Printf("[INFO] Config file location: %s\n", CONFIG_FILE)
+		fmt.Println()
+		if os.Geteuid() != 0 {
+			fmt.Println("⚠️  Permission denied. Try running with sudo:")
+			fmt.Printf("   sudo certfix-agent configure --token \"%s\" --endpoint \"%s\"\n", *token, *endpoint)
+		} else {
+			fmt.Println("⚠️  Ensure the parent directory exists and is writable:")
+			fmt.Printf("   sudo mkdir -p %s\n", filepath.Dir(CONFIG_FILE))
+			fmt.Printf("   sudo chmod 755 %s\n", filepath.Dir(CONFIG_FILE))
+		}
+		os.Exit(1)
 	}
 
 	fmt.Printf("[SUCCESS] Configuration saved to %s\n", CONFIG_FILE)

@@ -16,10 +16,13 @@ curl -fsSL https://raw.githubusercontent.com/certfix/certfix-agent/main/scripts/
 # 2. Configurar com seu token de API
 sudo certfix-agent configure --token "seu-token-api" --endpoint "https://api.certfix.com/api"
 
-# 3. Iniciar o serviço
+# 3. Verificar configuração (não requer sudo)
+certfix-agent config
+
+# 4. Iniciar o serviço
 sudo systemctl start certfix-agent
 
-# 4. Verificar status
+# 5. Verificar status
 sudo systemctl status certfix-agent
 ```
 
@@ -134,18 +137,23 @@ Isso criará o arquivo de configuração em `/etc/certfix-agent/config.json`:
 ### Comandos Disponíveis
 
 ```bash
-# Configurar o agente
-certfix-agent configure --token <api-key> --endpoint <url>
+# Configurar o agente (requer sudo)
+sudo certfix-agent configure --token <api-key> --endpoint <url>
 
-# Iniciar o agente
+# Mostrar configuração atual (não requer sudo)
+certfix-agent config
+
+# Iniciar o agente (requer sudo quando executado manualmente)
 certfix-agent start
 
-# Ver versão
+# Ver versão (não requer sudo)
 certfix-agent version
 
-# Ver ajuda
+# Ver ajuda (não requer sudo)
 certfix-agent help
 ```
+
+**Nota:** Apenas os comandos `configure` e `start` requerem sudo. Os comandos de consulta (`config`, `version`, `help`) podem ser executados sem privilégios elevados.
 
 ### Verificar Instalação
 
