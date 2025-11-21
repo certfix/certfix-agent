@@ -15,6 +15,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/certfix/certfix-agent/pkg/machineidentifier"
 )
 
 const (
@@ -32,6 +34,7 @@ type Config struct {
 }
 
 type InstanceData struct {
+	MachineID    string                 `json:"machine_id"`
 	Hostname     string                 `json:"hostname"`
 	OSType       string                 `json:"os_type"`
 	OSVersion    string                 `json:"os_version"`
@@ -186,8 +189,15 @@ func getMACAddress() string {
 }
 
 // Collect instance data
-func collectInstanceData(version string) *InstanceData {
+func collectInstanceData(version string) (*InstanceData, error) {
+	// Generate machine ID
+	machineID, err := machineidentifier.GenerateMachineID()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate machine ID: %w", err)
+	}
+
 	return &InstanceData{
+		MachineID:    machineID,
 		Hostname:     getHostname(),
 		OSType:       runtime.GOOS,
 		OSVersion:    getOSVersion(),
@@ -196,10 +206,11 @@ func collectInstanceData(version string) *InstanceData {
 		MACAddress:   getMACAddress(),
 		AgentVersion: version,
 		Metadata: map[string]interface{}{
-			"num_cpu":   runtime.NumCPU(),
-			"go_version": runtime.Version(),
+			"num_cpu":      runtime.NumCPU(),
+			"go_version":   runtime.Version(),
+			"fingerprint":  machineidentifier.GetMachineFingerprint(),
 		},
-	}
+	}, nil
 }
 
 // Register instance with the API
@@ -292,6 +303,8 @@ func main() {
 		handleStart()
 	case "version":
 		handleVersion()
+	case "machine-id":
+		handleMachineID()
 	case "help", "--help", "-h":
 		printUsage()
 	default:
@@ -307,6 +320,7 @@ func printUsage() {
 	fmt.Println("  certfix-agent configure --token <api-key> --endpoint <url>")
 	fmt.Println("  certfix-agent config")
 	fmt.Println("  certfix-agent start")
+	fmt.Println("  certfix-agent machine-id")
 	fmt.Println("  certfix-agent version")
 	fmt.Println("  certfix-agent help")
 	fmt.Println()
@@ -314,6 +328,7 @@ func printUsage() {
 	fmt.Println("  configure  Configure agent with token and endpoint")
 	fmt.Println("  config     Show current configuration")
 	fmt.Println("  start      Start the agent service")
+	fmt.Println("  machine-id Show unique machine identifier")
 	fmt.Println("  version    Show version information")
 	fmt.Println("  help       Show this help message")
 	fmt.Println()
@@ -335,6 +350,31 @@ func handleVersion() {
 	fmt.Printf("OS: %s\n", runtime.GOOS)
 	fmt.Printf("Architecture: %s\n", runtime.GOARCH)
 	fmt.Printf("Go Version: %s\n", runtime.Version())
+}
+
+func handleMachineID() {
+	machineID, err := machineidentifier.GenerateMachineID()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: Failed to generate machine ID: %v\n", err)
+		os.Exit(1)
+	}
+
+	fingerprint := machineidentifier.GetMachineFingerprint()
+	
+	fmt.Println("Machine Identifier Information")
+	fmt.Println("==============================")
+	fmt.Printf("Full ID:      %s\n", machineID)
+	fmt.Printf("Fingerprint:  %s\n", fingerprint)
+	fmt.Printf("Hostname:     %s\n", getHostname())
+	fmt.Printf("OS:           %s\n", runtime.GOOS)
+	fmt.Printf("Architecture: %s\n", runtime.GOARCH)
+	
+	// Check if machine ID file exists
+	if _, err := os.Stat(machineidentifier.MACHINE_ID_FILE); err == nil {
+		fmt.Printf("\nStored at:    %s\n", machineidentifier.MACHINE_ID_FILE)
+	} else {
+		fmt.Printf("\nNote: Machine ID will be stored at %s on first registration\n", machineidentifier.MACHINE_ID_FILE)
+	}
 }
 
 func handleShowConfig() {
@@ -434,13 +474,18 @@ func handleStart() {
 	log.Printf("[INFO] Endpoint: %s", config.Endpoint)
 
 	// Collect instance data
-	instanceData := collectInstanceData(config.CurrentVersion)
+	instanceData, err := collectInstanceData(config.CurrentVersion)
+	if err != nil {
+		log.Fatalf("[FATAL] Failed to collect instance data: %v", err)
+	}
+
 	log.Printf("[INFO] Instance Info: %s (%s %s) on %s", 
 		instanceData.Hostname, 
 		instanceData.OSType, 
 		instanceData.Architecture,
 		instanceData.OSVersion,
 	)
+	log.Printf("[INFO] Machine ID: %s", instanceData.Metadata["fingerprint"])
 
 	// Register with retry logic
 	var registerResp *RegisterResponse
